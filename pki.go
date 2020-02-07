@@ -15,10 +15,66 @@
 package main
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 )
+
+type SANType string
+
+const (
+	SANTypeURI          = "uri"
+	SANTypeEmailAddress = "emailAddress"
+	SANTypeDNSName      = "dnsName"
+	SANTypeIPAddress    = "ipAddress"
+)
+
+type SAN struct {
+	Type  SANType `json:"type"`
+	Value string  `json:"value"`
+}
+
+type Subject struct {
+	Country            string `json:"country,omitempty"`
+	Organization       string `json:"organization,omitempty"`
+	OrganizationalUnit string `json:"organizationalUnit,omitempty"`
+	Locality           string `json:"locality,omitempty"`
+	Province           string `json:"province,omitempty"`
+	StreetAddress      string `json:"streetAddress,omitempty"`
+	PostalCode         string `json:"postalCode,omitempty"`
+	CommonName         string `json:"commonName"`
+}
+
+type CertificatesCfg struct {
+	Validity int     `json:"validity"` // days
+	Subject  Subject `json:"subject"`
+	SANs     []SAN   `json:"san"`
+}
+
+type PKICfg struct {
+	Certificates CertificatesCfg `json:"certificates"`
+}
+
+func DefaultPKICfg() *PKICfg {
+	san := []SAN{
+		{Type: SANTypeDNSName, Value: "localhost"},
+		{Type: SANTypeIPAddress, Value: "127.0.0.1"},
+		{Type: SANTypeIPAddress, Value: "::1"},
+	}
+
+	cfg := PKICfg{
+		Certificates: CertificatesCfg{
+			Validity: 365,
+			Subject:  Subject{CommonName: "localhost"},
+			SANs:     san,
+		},
+	}
+
+	return &cfg
+}
 
 type PKI struct {
 	Path string
@@ -49,7 +105,40 @@ func (pki *PKI) Initialize() error {
 		return fmt.Errorf("%q is not empty", pki.Path)
 	}
 
+	// Create the default configuration file
+	cfg := DefaultPKICfg()
+
+	cfgData, err := encodeJSON(cfg)
+	if err != nil {
+		return fmt.Errorf("cannot encode configuration: %w", err)
+	}
+
+	cfgPath := path.Join(pki.Path, "cfg.json")
+
+	info("creating default configuration file at %q", cfgPath)
+
+	if err := ioutil.WriteFile(cfgPath, cfgData, 0644); err != nil {
+		return fmt.Errorf("cannot write %q: %w", cfgPath, err)
+	}
+
+	// Create the root private key
+	// TODO
+
+	// Create the root CA
 	// TODO
 
 	return nil
+}
+
+func encodeJSON(value interface{}) ([]byte, error) {
+	var buf bytes.Buffer
+
+	e := json.NewEncoder(&buf)
+	e.SetIndent("", "  ")
+
+	if err := e.Encode(value); err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
 }
