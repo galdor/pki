@@ -15,12 +15,14 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+)
+
+const (
+	RootCAName = "root-ca"
 )
 
 type SANType string
@@ -121,24 +123,14 @@ func (pki *PKI) Initialize() error {
 		return fmt.Errorf("cannot write %q: %w", cfgPath, err)
 	}
 
-	// Create the root private key
-	// TODO
+	// Create the root CA private key
+	_, err = pki.CreatePrivateKey(RootCAName)
+	if err != nil {
+		return fmt.Errorf("cannot create root ca private key: %w", err)
+	}
 
-	// Create the root CA
+	// Create the root CA certificate
 	// TODO
 
 	return nil
-}
-
-func encodeJSON(value interface{}) ([]byte, error) {
-	var buf bytes.Buffer
-
-	e := json.NewEncoder(&buf)
-	e.SetIndent("", "  ")
-
-	if err := e.Encode(value); err != nil {
-		return nil, err
-	}
-
-	return buf.Bytes(), nil
 }
