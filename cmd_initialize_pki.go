@@ -28,6 +28,7 @@ func cmdInitializePKI(args []string, pki *PKI) {
 	cl.AddOption("v", "validity", "days",
 		"the duration during which the root certificate will "+
 			"remain valid")
+	cl.SetOptionDefault("validity", "365")
 
 	cl.AddOption("", "country", "name",
 		"the subject country")
