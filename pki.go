@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"os"
 	"path"
 )
@@ -35,13 +34,6 @@ func DefaultPKICfg() *PKICfg {
 		Certificates: CertificateData{
 			Validity: 365,
 			Subject:  Subject{CommonName: "localhost"},
-			SAN: SAN{
-				DNSNames: []string{"localhost"},
-				IPAddresses: []net.IP{
-					net.ParseIP("127.0.0.1"),
-					net.ParseIP("::1"),
-				},
-			},
 		},
 	}
 
