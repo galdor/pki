@@ -17,6 +17,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"path"
 )
@@ -25,53 +26,22 @@ const (
 	RootCAName = "root-ca"
 )
 
-type SANType string
-
-const (
-	SANTypeURI          = "uri"
-	SANTypeEmailAddress = "emailAddress"
-	SANTypeDNSName      = "dnsName"
-	SANTypeIPAddress    = "ipAddress"
-)
-
-type SAN struct {
-	Type  SANType `json:"type"`
-	Value string  `json:"value"`
-}
-
-type Subject struct {
-	Country            string `json:"country,omitempty"`
-	Organization       string `json:"organization,omitempty"`
-	OrganizationalUnit string `json:"organizationalUnit,omitempty"`
-	Locality           string `json:"locality,omitempty"`
-	Province           string `json:"province,omitempty"`
-	StreetAddress      string `json:"streetAddress,omitempty"`
-	PostalCode         string `json:"postalCode,omitempty"`
-	CommonName         string `json:"commonName"`
-}
-
-type CertificatesCfg struct {
-	Validity int     `json:"validity"` // days
-	Subject  Subject `json:"subject"`
-	SANs     []SAN   `json:"san"`
-}
-
 type PKICfg struct {
-	Certificates CertificatesCfg `json:"certificates"`
+	Certificates CertificateData `json:"certificates"`
 }
 
 func DefaultPKICfg() *PKICfg {
-	san := []SAN{
-		{Type: SANTypeDNSName, Value: "localhost"},
-		{Type: SANTypeIPAddress, Value: "127.0.0.1"},
-		{Type: SANTypeIPAddress, Value: "::1"},
-	}
-
 	cfg := PKICfg{
-		Certificates: CertificatesCfg{
+		Certificates: CertificateData{
 			Validity: 365,
 			Subject:  Subject{CommonName: "localhost"},
-			SANs:     san,
+			SAN: SAN{
+				DNSNames: []string{"localhost"},
+				IPAddresses: []net.IP{
+					net.ParseIP("127.0.0.1"),
+					net.ParseIP("::1"),
+				},
+			},
 		},
 	}
 
@@ -80,6 +50,7 @@ func DefaultPKICfg() *PKICfg {
 
 type PKI struct {
 	Path string
+	Cfg  *PKICfg
 }
 
 func NewPKI(path string) *PKI {
@@ -123,14 +94,22 @@ func (pki *PKI) Initialize() error {
 		return fmt.Errorf("cannot write %q: %w", cfgPath, err)
 	}
 
+	pki.Cfg = cfg
+
 	// Create the root CA private key
-	_, err = pki.CreatePrivateKey(RootCAName)
+	key, err := pki.CreatePrivateKey(RootCAName)
 	if err != nil {
 		return fmt.Errorf("cannot create root ca private key: %w", err)
 	}
 
 	// Create the root CA certificate
-	// TODO
+	certData := pki.Cfg.Certificates
+	certData.IsCA = true
+
+	_, err = pki.CreateCertificate(RootCAName, &certData, nil, key)
+	if err != nil {
+		return fmt.Errorf("cannot create root ca certificate: %w", err)
+	}
 
 	return nil
 }

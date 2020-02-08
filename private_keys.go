@@ -17,8 +17,10 @@ package main
 import (
 	"crypto"
 	"crypto/ecdsa"
+	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -62,4 +64,20 @@ func (pki *PKI) PrivateKeysPath() string {
 
 func (pki *PKI) PrivateKeyPath(name string) string {
 	return path.Join(pki.PrivateKeysPath(), name+".key")
+}
+
+func PublicKey(privateKey crypto.PrivateKey) crypto.PublicKey {
+	switch key := privateKey.(type) {
+	case *rsa.PrivateKey:
+		return &key.PublicKey
+
+	case *ecdsa.PrivateKey:
+		return &key.PublicKey
+
+	case ed25519.PrivateKey:
+		return key.Public().(ed25519.PublicKey)
+
+	default:
+		panic(fmt.Sprintf("unhandled private key %#v", privateKey))
+	}
 }
