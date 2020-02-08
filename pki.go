@@ -61,7 +61,7 @@ func NewPKI(path string) *PKI {
 	return &pki
 }
 
-func (pki *PKI) Initialize() error {
+func (pki *PKI) Initialize(certData *CertificateData) error {
 	info("initializing pki in %q", pki.Path)
 
 	// Create the top directory if it does not exists
@@ -103,10 +103,7 @@ func (pki *PKI) Initialize() error {
 	}
 
 	// Create the root CA certificate
-	certData := pki.Cfg.Certificates
-	certData.IsCA = true
-
-	_, err = pki.CreateCertificate(RootCAName, &certData, nil, key)
+	_, err = pki.CreateCertificate(RootCAName, certData, nil, key)
 	if err != nil {
 		return fmt.Errorf("cannot create root ca certificate: %w", err)
 	}
