@@ -32,9 +32,6 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 	cl.AddOption("i", "issuer-certificate", "name",
 		"the name of the issuer certificate")
 	cl.SetOptionDefault("issuer-certificate", RootCAName)
-	cl.AddOption("k", "issuer-private-key", "name",
-		"the name of the issuer private key")
-	cl.SetOptionDefault("issuer-private-key", RootCAName)
 
 	cl.AddFlag("", "ca", "create a ca certificate")
 
@@ -71,8 +68,8 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 
 	name := cl.ArgumentValue("name")
 
-	issuerKeyName := cl.OptionValue("issuer-private-key")
 	issuerCertName := cl.OptionValue("issuer-certificate")
+	issuerKeyName := issuerCertName
 
 	validity := 0
 	if cl.IsOptionSet("validity") {
