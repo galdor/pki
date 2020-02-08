@@ -29,21 +29,21 @@ func cmdInitializePKI(args []string, pki *PKI) {
 		"the duration during which the root certificate will "+
 			"remain valid")
 
-	cl.AddOption("", "subject-country", "name",
+	cl.AddOption("", "country", "name",
 		"the subject country")
-	cl.AddOption("", "subject-organization", "name",
+	cl.AddOption("", "organization", "name",
 		"the subject organization")
-	cl.AddOption("", "subject-organizational-unit", "name",
+	cl.AddOption("", "organizational-unit", "name",
 		"the subject organizational unit")
-	cl.AddOption("", "subject-locality", "name",
+	cl.AddOption("", "locality", "name",
 		"the subject locality")
-	cl.AddOption("", "subject-province", "name",
+	cl.AddOption("", "province", "name",
 		"the subject province")
-	cl.AddOption("", "subject-street-address", "name",
+	cl.AddOption("", "street-address", "name",
 		"the subject street-address")
-	cl.AddOption("", "subject-postal-code", "name",
+	cl.AddOption("", "postal-code", "name",
 		"the subject postal code")
-	cl.AddOption("", "subject-common-name", "name",
+	cl.AddOption("", "common-name", "name",
 		"the subject common name")
 
 	cl.Parse(args)
@@ -60,14 +60,14 @@ func cmdInitializePKI(args []string, pki *PKI) {
 		Validity: validity,
 
 		Subject: Subject{
-			Country:            cl.OptionValue("subject-country"),
-			Organization:       cl.OptionValue("subject-organization"),
-			OrganizationalUnit: cl.OptionValue("subject-organizational-unit"),
-			Locality:           cl.OptionValue("subject-locality"),
-			Province:           cl.OptionValue("subject-province"),
-			StreetAddress:      cl.OptionValue("subject-street-address"),
-			PostalCode:         cl.OptionValue("subject-postal-code"),
-			CommonName:         cl.OptionValue("subject-common-name"),
+			Country:            cl.OptionValue("country"),
+			Organization:       cl.OptionValue("organization"),
+			OrganizationalUnit: cl.OptionValue("organizational-unit"),
+			Locality:           cl.OptionValue("locality"),
+			Province:           cl.OptionValue("province"),
+			StreetAddress:      cl.OptionValue("street-address"),
+			PostalCode:         cl.OptionValue("postal-code"),
+			CommonName:         cl.OptionValue("common-name"),
 		},
 
 		IsCA: true,
