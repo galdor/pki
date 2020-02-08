@@ -18,119 +18,41 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/big"
-	"net"
-	"net/url"
 	"path"
-	"time"
 )
 
-type Subject struct {
-	Country            string `json:"country,omitempty"`
-	Organization       string `json:"organization,omitempty"`
-	OrganizationalUnit string `json:"organizationalUnit,omitempty"`
-	Locality           string `json:"locality,omitempty"`
-	Province           string `json:"province,omitempty"`
-	StreetAddress      string `json:"streetAddress,omitempty"`
-	PostalCode         string `json:"postalCode,omitempty"`
-	CommonName         string `json:"commonName"`
-}
+func (pki *PKI) LoadCertificate(name string) (*x509.Certificate, error) {
+	info("loading certificate %q", name)
 
-func (s *Subject) PKIXName() pkix.Name {
-	var name pkix.Name
+	certPath := pki.CertificatePath(name)
 
-	if s.Country != "" {
-		name.Country = []string{s.Country}
-	}
-
-	if s.Organization != "" {
-		name.Organization = []string{s.Organization}
-	}
-
-	if s.OrganizationalUnit != "" {
-		name.OrganizationalUnit = []string{s.OrganizationalUnit}
-	}
-
-	if s.Locality != "" {
-		name.Locality = []string{s.Locality}
-	}
-
-	if s.Province != "" {
-		name.Province = []string{s.Province}
-	}
-
-	if s.StreetAddress != "" {
-		name.StreetAddress = []string{s.StreetAddress}
-	}
-
-	if s.PostalCode != "" {
-		name.PostalCode = []string{s.PostalCode}
-	}
-
-	name.CommonName = s.CommonName
-
-	return name
-}
-
-type SAN struct {
-	URIs           []*url.URL `json:"uris,omitempty"`
-	DNSNames       []string   `json:"dnsNames,omitempty"`
-	IPAddresses    []net.IP   `json:"ipAddresses,omitempty"`
-	EmailAddresses []string   `json:"emailAddresses,omitempty"`
-}
-
-type CertificateData struct {
-	Validity int     `json:"validity"` // days
-	Subject  Subject `json:"subject"`
-	SAN      SAN     `json:"san"`
-	IsCA     bool    `json:"isCA,omitempty"`
-}
-
-func (data *CertificateData) CertificateTemplate() (*x509.Certificate, error) {
-	serialNumber, err := generateRandomSerialNumber()
+	data, err := ioutil.ReadFile(certPath)
 	if err != nil {
-		return nil, fmt.Errorf("cannot generate random serial "+
-			"number: %w", err)
+		return nil, fmt.Errorf("cannot read %q: %w", certPath, err)
 	}
 
-	now := time.Now().UTC()
-	notBefore := now
-	notAfter := now.Add(time.Duration(data.Validity) * 24 * time.Hour)
-
-	keyUsage := x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
-	if data.IsCA {
-		keyUsage |= x509.KeyUsageCertSign
-	}
-	extKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
-
-	template := x509.Certificate{
-		SerialNumber: serialNumber,
-
-		Subject: data.Subject.PKIXName(),
-
-		NotBefore: notBefore,
-		NotAfter:  notAfter,
-
-		KeyUsage:    keyUsage,
-		ExtKeyUsage: extKeyUsage,
-
-		BasicConstraintsValid: true,
-		IsCA:                  data.IsCA,
-
-		URIs:           data.SAN.URIs,
-		DNSNames:       data.SAN.DNSNames,
-		IPAddresses:    data.SAN.IPAddresses,
-		EmailAddresses: data.SAN.EmailAddresses,
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("no pem block found")
 	}
 
-	return &template, nil
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse certificate: %w", err)
+	}
+
+	return cert, nil
 }
 
-func (pki *PKI) CreateCertificate(name string, data *CertificateData, parentCert *x509.Certificate, privateKey crypto.PrivateKey) (*x509.Certificate, error) {
-	cert, err := pki.GenerateCertificate(data, parentCert, privateKey)
+func (pki *PKI) CreateCertificate(name string, data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey) (*x509.Certificate, error) {
+	info("creating certificate %q", name)
+
+	cert, err := pki.GenerateCertificate(data, issuerCert, issuerKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate certificate: %w", err)
 	}
@@ -142,20 +64,20 @@ func (pki *PKI) CreateCertificate(name string, data *CertificateData, parentCert
 	return cert, nil
 }
 
-func (pki *PKI) GenerateCertificate(data *CertificateData, parentCert *x509.Certificate, privateKey crypto.PrivateKey) (*x509.Certificate, error) {
+func (pki *PKI) GenerateCertificate(data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey) (*x509.Certificate, error) {
 	template, err := data.CertificateTemplate()
 	if err != nil {
 		return nil, err
 	}
 
-	if parentCert == nil {
-		parentCert = template
+	if issuerCert == nil {
+		issuerCert = template
 	}
 
-	publicKey := PublicKey(privateKey)
+	publicKey := PublicKey(issuerKey)
 
 	derData, err := x509.CreateCertificate(rand.Reader, template,
-		parentCert, publicKey, privateKey)
+		issuerCert, publicKey, issuerKey)
 	if err != nil {
 		return nil, err
 	}

@@ -15,6 +15,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -53,6 +54,30 @@ func NewPKI(path string) *PKI {
 	return &pki
 }
 
+func (pki *PKI) LoadConfiguration() error {
+	cfgPath := pki.CfgPath()
+
+	info("loading configuration file at %q", cfgPath)
+
+	data, err := ioutil.ReadFile(cfgPath)
+	if err != nil {
+		return fmt.Errorf("cannot read %q: %w", cfgPath, err)
+	}
+
+	var cfg PKICfg
+	if err := json.Unmarshal(data, &cfg); err != nil {
+		return fmt.Errorf("cannot decode configuration: %w", err)
+	}
+
+	pki.Cfg = &cfg
+
+	return nil
+}
+
+func (pki *PKI) CfgPath() string {
+	return path.Join(pki.Path, "cfg.json")
+}
+
 func (pki *PKI) Initialize(certData *CertificateData) error {
 	info("initializing pki in %q", pki.Path)
 
@@ -78,7 +103,7 @@ func (pki *PKI) Initialize(certData *CertificateData) error {
 		return fmt.Errorf("cannot encode configuration: %w", err)
 	}
 
-	cfgPath := path.Join(pki.Path, "cfg.json")
+	cfgPath := pki.CfgPath()
 
 	info("creating default configuration file at %q", cfgPath)
 

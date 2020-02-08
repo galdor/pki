@@ -23,11 +23,43 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"path"
 )
 
+func (pki *PKI) LoadPrivateKey(name string) (crypto.PrivateKey, error) {
+	info("loading private key %q", name)
+
+	keyPath := pki.PrivateKeyPath(name)
+
+	data, err := ioutil.ReadFile(keyPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read %q: %w", keyPath, err)
+	}
+
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("no pem block found")
+	}
+
+	keyData, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse key: %w", err)
+	}
+
+	ecdsaKey, ok := keyData.(*ecdsa.PrivateKey)
+	if !ok {
+		return nil, errors.New("key is not an ecdsa key")
+	}
+
+	return ecdsaKey, nil
+}
+
 func (pki *PKI) CreatePrivateKey(name string) (crypto.PrivateKey, error) {
+	info("creating private key %q", name)
+
 	key, err := pki.GeneratePrivateKey()
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate private key: %w", err)

@@ -33,6 +33,7 @@ func main() {
 	cl.SetOptionDefault("directory", ".")
 
 	cl.AddCommand("initialize-pki", "initialize a new pki")
+	cl.AddCommand("create-certificate", "create a new certificate")
 
 	cl.AddFlag("v", "verbose", "enable execution logging")
 
@@ -47,10 +48,18 @@ func main() {
 	switch cl.CommandName() {
 	case "initialize-pki":
 		cmd = cmdInitializePKI
+	case "create-certificate":
+		cmd = cmdCreateCertificate
 	}
 
 	// PKI
 	pki := NewPKI(pkiPath)
+
+	if cl.CommandName() != "initialize-pki" {
+		if err := pki.LoadConfiguration(); err != nil {
+			die("cannot load pki configuration: %v", err)
+		}
+	}
 
 	// Main
 	cmd(cl.CommandNameAndArguments(), pki)
