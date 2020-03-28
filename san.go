@@ -76,12 +76,12 @@ func parseSANIPAddresses(s string) ([]net.IP, error) {
 	for _, part := range parts {
 		addressString := strings.Trim(part, " ")
 		if addressString == "" {
-			return nil, fmt.Errorf("empty address")
+			return nil, fmt.Errorf("empty ip address")
 		}
 
 		address := net.ParseIP(addressString)
 		if address == nil {
-			return nil, fmt.Errorf("invalid address %q",
+			return nil, fmt.Errorf("invalid ip address %q",
 				addressString)
 		}
 

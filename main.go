@@ -34,6 +34,7 @@ func main() {
 
 	cl.AddCommand("initialize-pki", "initialize a new pki")
 	cl.AddCommand("create-certificate", "create a new certificate")
+	cl.AddCommand("print-certificate", "print the content of a certificate")
 
 	cl.AddFlag("v", "verbose", "enable execution logging")
 
@@ -50,6 +51,8 @@ func main() {
 		cmd = cmdInitializePKI
 	case "create-certificate":
 		cmd = cmdCreateCertificate
+	case "print-certificate":
+		cmd = cmdPrintCertificate
 	}
 
 	// PKI
