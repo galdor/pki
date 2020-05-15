@@ -127,12 +127,12 @@ func (pki *PKI) Initialize(certData *CertificateData) error {
 	}
 
 	// Create the root CA CRL
-	currentDate := time.Now().UTC()
+	creationDate := time.Now().UTC()
 	crlValidity := time.Duration(certData.Validity)
-	crlExpirationDate := currentDate.Add(crlValidity * 24 * time.Hour)
+	crlExpirationDate := creationDate.Add(crlValidity * 24 * time.Hour)
 
 	crlData := CRLData{
-		CurrentDate:    currentDate,
+		CreationDate:   creationDate,
 		ExpirationDate: crlExpirationDate,
 	}
 

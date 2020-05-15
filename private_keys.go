@@ -87,7 +87,7 @@ func (pki *PKI) WritePrivateKey(key crypto.PrivateKey, name string) error {
 
 	keyPath := pki.PrivateKeyPath(name)
 
-	return writeFile(keyPath, pemData, 0600)
+	return createFile(keyPath, pemData, 0600)
 }
 
 func (pki *PKI) PrivateKeysPath() string {

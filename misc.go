@@ -21,14 +21,22 @@ func encodeJSON(value interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func writeFile(filePath string, data []byte, mode os.FileMode) error {
+func createFile(filePath string, data []byte, mode os.FileMode) error {
+	return writeFile(filePath, data, mode, os.O_EXCL)
+}
+
+func createOrReplaceFile(filePath string, data []byte, mode os.FileMode) error {
+	return writeFile(filePath, data, mode, os.O_TRUNC)
+}
+
+func writeFile(filePath string, data []byte, mode os.FileMode, flags int) error {
 	dirPath := filepath.Dir(filePath)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
 		return fmt.Errorf("cannot create directory %q: %w",
 			dirPath, err)
 	}
 
-	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_EXCL,
+	file, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|flags,
 		mode)
 	if os.IsExist(err) {
 		return fmt.Errorf("%q already exists", filePath)

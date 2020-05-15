@@ -19,11 +19,40 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"path"
 )
 
+func (pki *PKI) LoadCRL(name string) ([]byte, error) {
+	info("loading crl %q", name)
+
+	crlPath := pki.CRLPath(name)
+
+	crl, err := ioutil.ReadFile(crlPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read %q: %w", crlPath, err)
+	}
+
+	return crl, nil
+}
+
 func (pki *PKI) CreateCRL(name string, cert *x509.Certificate, key crypto.PrivateKey, crlData *CRLData) ([]byte, error) {
 	info("creating crl %q", name)
+
+	crl, err := pki.GenerateCRL(cert, key, crlData)
+	if err != nil {
+		return nil, fmt.Errorf("cannot generate crl: %w", err)
+	}
+
+	if err := pki.WriteCRL(crl, name); err != nil {
+		return nil, fmt.Errorf("cannot write crl: %w", err)
+	}
+
+	return crl, nil
+}
+
+func (pki *PKI) UpdateCRL(name string, cert *x509.Certificate, key crypto.PrivateKey, crlData *CRLData) ([]byte, error) {
+	info("updating crl %q", name)
 
 	crl, err := pki.GenerateCRL(cert, key, crlData)
 	if err != nil {
@@ -41,7 +70,7 @@ func (pki *PKI) GenerateCRL(cert *x509.Certificate, key crypto.PrivateKey, crlDa
 	revokedCerts := crlData.PKIXRevokedCerts()
 
 	crl, err := cert.CreateCRL(rand.Reader, key, revokedCerts,
-		crlData.CurrentDate, crlData.ExpirationDate)
+		crlData.CreationDate, crlData.ExpirationDate)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +81,7 @@ func (pki *PKI) GenerateCRL(cert *x509.Certificate, key crypto.PrivateKey, crlDa
 func (pki *PKI) WriteCRL(crl []byte, name string) error {
 	crlPath := pki.CRLPath(name)
 
-	return writeFile(crlPath, crl, 0644)
+	return createOrReplaceFile(crlPath, crl, 0644)
 }
 
 func (pki *PKI) CRLPath(name string) string {

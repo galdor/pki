@@ -102,7 +102,7 @@ func (pki *PKI) WriteCertificate(cert *x509.Certificate, name string) error {
 
 	certPath := pki.CertificatePath(name)
 
-	return writeFile(certPath, pemData, 0644)
+	return createFile(certPath, pemData, 0644)
 }
 
 func (pki *PKI) CertificatesPath() string {
