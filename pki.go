@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"time"
 )
 
 const (
@@ -120,9 +121,24 @@ func (pki *PKI) Initialize(certData *CertificateData) error {
 	}
 
 	// Create the root CA certificate
-	_, err = pki.CreateCertificate(RootCAName, certData, nil, key)
+	cert, err := pki.CreateCertificate(RootCAName, certData, nil, key)
 	if err != nil {
 		return fmt.Errorf("cannot create root ca certificate: %w", err)
+	}
+
+	// Create the root CA CRL
+	currentDate := time.Now().UTC()
+	crlValidity := time.Duration(certData.Validity)
+	crlExpirationDate := currentDate.Add(crlValidity * 24 * time.Hour)
+
+	crlData := CRLData{
+		CurrentDate:    currentDate,
+		ExpirationDate: crlExpirationDate,
+	}
+
+	_, err = pki.CreateCRL(RootCAName, cert, key, &crlData)
+	if err != nil {
+		return fmt.Errorf("cannot create root ca crl: %w", err)
 	}
 
 	return nil
