@@ -55,10 +55,11 @@ func (pki *PKI) LoadCertificate(name string) (*x509.Certificate, error) {
 	return cert, nil
 }
 
-func (pki *PKI) CreateCertificate(name string, data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey) (*x509.Certificate, error) {
+func (pki *PKI) CreateCertificate(name string, data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey, publicKey crypto.PublicKey) (*x509.Certificate, error) {
 	info("creating certificate %q", name)
 
-	cert, err := pki.GenerateCertificate(data, issuerCert, issuerKey)
+	cert, err := pki.GenerateCertificate(data, issuerCert, issuerKey,
+		publicKey)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate certificate: %w", err)
 	}
@@ -70,7 +71,7 @@ func (pki *PKI) CreateCertificate(name string, data *CertificateData, issuerCert
 	return cert, nil
 }
 
-func (pki *PKI) GenerateCertificate(data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey) (*x509.Certificate, error) {
+func (pki *PKI) GenerateCertificate(data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey, publicKey crypto.PublicKey) (*x509.Certificate, error) {
 	template, err := data.CertificateTemplate()
 	if err != nil {
 		return nil, err
@@ -79,8 +80,6 @@ func (pki *PKI) GenerateCertificate(data *CertificateData, issuerCert *x509.Cert
 	if issuerCert == nil {
 		issuerCert = template
 	}
-
-	publicKey := PublicKey(issuerKey)
 
 	derData, err := x509.CreateCertificate(rand.Reader, template,
 		issuerCert, publicKey, issuerKey)

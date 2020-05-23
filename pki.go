@@ -121,7 +121,8 @@ func (pki *PKI) Initialize(certData *CertificateData, privateKeyPassword []byte)
 	}
 
 	// Create the root CA certificate
-	cert, err := pki.CreateCertificate(RootCAName, certData, nil, key)
+	cert, err := pki.CreateCertificate(RootCAName, certData, nil, key,
+		PublicKey(key))
 	if err != nil {
 		return fmt.Errorf("cannot create root ca certificate: %w", err)
 	}

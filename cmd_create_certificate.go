@@ -175,12 +175,13 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 		privateKeyPassword = password
 	}
 
-	_, err = pki.CreatePrivateKey(name, privateKeyPassword)
+	key, err := pki.CreatePrivateKey(name, privateKeyPassword)
 	if err != nil {
 		die("cannot private key: %v", err)
 	}
 
-	_, err = pki.CreateCertificate(name, &certData, issuerCert, issuerKey)
+	_, err = pki.CreateCertificate(name, &certData, issuerCert, issuerKey,
+		PublicKey(key))
 	if err != nil {
 		die("cannot initialize pki: %v", err)
 	}
