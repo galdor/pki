@@ -158,13 +158,6 @@ func (data *CertificateData) CertificateTemplate() (*x509.Certificate, error) {
 		keyUsage |= x509.KeyUsageCRLSign
 	}
 
-	var extKeyUsage []x509.ExtKeyUsage
-	if data.IsClientCertificate {
-		extKeyUsage = append(extKeyUsage, x509.ExtKeyUsageClientAuth)
-	} else {
-		extKeyUsage = append(extKeyUsage, x509.ExtKeyUsageServerAuth)
-	}
-
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
 
@@ -173,8 +166,7 @@ func (data *CertificateData) CertificateTemplate() (*x509.Certificate, error) {
 		NotBefore: notBefore,
 		NotAfter:  notAfter,
 
-		KeyUsage:    keyUsage,
-		ExtKeyUsage: extKeyUsage,
+		KeyUsage: keyUsage,
 
 		BasicConstraintsValid: true,
 		IsCA:                  data.IsCA,
