@@ -110,7 +110,7 @@ func (pki *PKI) CertificatesPath() string {
 }
 
 func (pki *PKI) CertificatePath(name string) string {
-	return path.Join(pki.CertificatesPath(), name+".cert")
+	return path.Join(pki.CertificatesPath(), name+".crt")
 }
 
 func PrintCertificate(cert *x509.Certificate, w io.Writer) error {
