@@ -30,6 +30,8 @@ func cmdInitializePKI(args []string, pki *PKI) {
 			"remain valid")
 	cl.SetOptionDefault("validity", "365")
 
+	cl.AddFlag("e", "encrypt-private-key", "encrypt the private key")
+
 	cl.AddOption("", "country", "name",
 		"the subject country")
 	cl.AddOption("", "organization", "name",
@@ -57,9 +59,14 @@ func cmdInitializePKI(args []string, pki *PKI) {
 	validity := int(i64)
 
 	// Private key password prompt
-	privateKeyPassword, err := ReadPrivateKeyPasswordForCreation(RootCAName)
-	if err != nil {
-		die("cannot read private key password: %v", err)
+	var privateKeyPassword []byte
+	if cl.IsOptionSet("encrypt-private-key") {
+		password, err := ReadPrivateKeyPasswordForCreation(RootCAName)
+		if err != nil {
+			die("cannot read private key password: %v", err)
+		}
+
+		privateKeyPassword = password
 	}
 
 	// Main
