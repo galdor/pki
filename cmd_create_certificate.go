@@ -34,6 +34,7 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 	cl.SetOptionDefault("issuer-certificate", RootCAName)
 
 	cl.AddFlag("", "ca", "create a ca certificate")
+	cl.AddFlag("", "client", "create a client certificate")
 
 	cl.AddOption("v", "validity", "days",
 		"the duration during which the certificate will remain valid")
@@ -154,7 +155,8 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 			EmailAddresses: sanEmailAddresses,
 		},
 
-		IsCA: cl.IsOptionSet("ca"),
+		IsCA:                cl.IsOptionSet("ca"),
+		IsClientCertificate: cl.IsOptionSet("client"),
 	}
 
 	certData.UpdateFromDefaults(&pki.Cfg.Certificates)

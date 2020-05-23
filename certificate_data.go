@@ -71,10 +71,11 @@ func (s *Subject) PKIXName() pkix.Name {
 }
 
 type CertificateData struct {
-	Validity int     `json:"validity"` // days
-	Subject  Subject `json:"subject"`
-	SAN      SAN     `json:"san"`
-	IsCA     bool    `json:"isCA,omitempty"`
+	Validity            int     `json:"validity"` // days
+	Subject             Subject `json:"subject"`
+	SAN                 SAN     `json:"san"`
+	IsCA                bool    `json:"isCA,omitempty"`
+	IsClientCertificate bool    `json:"isClientCertificate,omitempty"`
 }
 
 func (data *CertificateData) UpdateFromDefaults(defaultData *CertificateData) {
@@ -157,7 +158,12 @@ func (data *CertificateData) CertificateTemplate() (*x509.Certificate, error) {
 		keyUsage |= x509.KeyUsageCRLSign
 	}
 
-	extKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
+	var extKeyUsage []x509.ExtKeyUsage
+	if data.IsClientCertificate {
+		extKeyUsage = append(extKeyUsage, x509.ExtKeyUsageClientAuth)
+	} else {
+		extKeyUsage = append(extKeyUsage, x509.ExtKeyUsageServerAuth)
+	}
 
 	template := x509.Certificate{
 		SerialNumber: serialNumber,
