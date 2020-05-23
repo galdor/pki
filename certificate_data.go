@@ -149,10 +149,14 @@ func (data *CertificateData) CertificateTemplate() (*x509.Certificate, error) {
 	notBefore := now
 	notAfter := now.Add(time.Duration(data.Validity) * 24 * time.Hour)
 
-	keyUsage := x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature
+	var keyUsage x509.KeyUsage
+	keyUsage |= x509.KeyUsageKeyEncipherment
+	keyUsage |= x509.KeyUsageDigitalSignature
 	if data.IsCA {
 		keyUsage |= x509.KeyUsageCertSign
+		keyUsage |= x509.KeyUsageCRLSign
 	}
+
 	extKeyUsage := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}
 
 	template := x509.Certificate{
