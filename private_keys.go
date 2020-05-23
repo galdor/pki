@@ -29,7 +29,9 @@ import (
 	"path"
 )
 
-func (pki *PKI) LoadPrivateKey(name string) (crypto.PrivateKey, error) {
+type PrivateKeyPasswordReader func() ([]byte, error)
+
+func (pki *PKI) LoadPrivateKey(name string, passwordReader PrivateKeyPasswordReader) (crypto.PrivateKey, error) {
 	info("loading private key %q", name)
 
 	keyPath := pki.PrivateKeyPath(name)
@@ -44,7 +46,28 @@ func (pki *PKI) LoadPrivateKey(name string) (crypto.PrivateKey, error) {
 		return nil, errors.New("no pem block found")
 	}
 
-	keyData, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	var blockData []byte
+
+	if x509.IsEncryptedPEMBlock(block) {
+		info("decrypting private key")
+
+		password, err := passwordReader()
+		if err != nil {
+			return nil, fmt.Errorf("cannot read password: %w", err)
+		}
+
+		decryptedBlock, err := x509.DecryptPEMBlock(block, password)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"cannot decrypt pem block: %w", err)
+		}
+
+		blockData = decryptedBlock
+	} else {
+		blockData = block.Bytes
+	}
+
+	keyData, err := x509.ParsePKCS8PrivateKey(blockData)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse key: %w", err)
 	}
@@ -57,7 +80,7 @@ func (pki *PKI) LoadPrivateKey(name string) (crypto.PrivateKey, error) {
 	return ecdsaKey, nil
 }
 
-func (pki *PKI) CreatePrivateKey(name string) (crypto.PrivateKey, error) {
+func (pki *PKI) CreatePrivateKey(name string, password []byte) (crypto.PrivateKey, error) {
 	info("creating private key %q", name)
 
 	key, err := pki.GeneratePrivateKey()
@@ -65,7 +88,7 @@ func (pki *PKI) CreatePrivateKey(name string) (crypto.PrivateKey, error) {
 		return nil, fmt.Errorf("cannot generate private key: %w", err)
 	}
 
-	if err := pki.WritePrivateKey(key, name); err != nil {
+	if err := pki.WritePrivateKey(key, name, password); err != nil {
 		return nil, fmt.Errorf("cannot write private key: %w", err)
 	}
 
@@ -76,14 +99,27 @@ func (pki *PKI) GeneratePrivateKey() (crypto.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 }
 
-func (pki *PKI) WritePrivateKey(key crypto.PrivateKey, name string) error {
+func (pki *PKI) WritePrivateKey(key crypto.PrivateKey, name string, password []byte) error {
 	derData, err := x509.MarshalPKCS8PrivateKey(key)
 	if err != nil {
 		return fmt.Errorf("cannot encode private key: %w", err)
 	}
 
-	block := pem.Block{Type: "PRIVATE KEY", Bytes: derData}
-	pemData := pem.EncodeToMemory(&block)
+	var block *pem.Block
+
+	blockType := "PRIVATE KEY"
+
+	if password == nil {
+		block = &pem.Block{Type: blockType, Bytes: derData}
+	} else {
+		block, err = x509.EncryptPEMBlock(rand.Reader, blockType,
+			derData, password, x509.PEMCipherAES256)
+		if err != nil {
+			return fmt.Errorf("cannot encrypt pem block: %w", err)
+		}
+	}
+
+	pemData := pem.EncodeToMemory(block)
 
 	keyPath := pki.PrivateKeyPath(name)
 

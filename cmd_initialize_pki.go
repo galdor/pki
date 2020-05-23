@@ -56,6 +56,12 @@ func cmdInitializePKI(args []string, pki *PKI) {
 	}
 	validity := int(i64)
 
+	// Private key password prompt
+	privateKeyPassword, err := ReadPrivateKeyPasswordForCreation(RootCAName)
+	if err != nil {
+		die("cannot read private key password: %v", err)
+	}
+
 	// Main
 	certData := CertificateData{
 		Validity: validity,
@@ -74,7 +80,7 @@ func cmdInitializePKI(args []string, pki *PKI) {
 		IsCA: true,
 	}
 
-	if err := pki.Initialize(&certData); err != nil {
+	if err := pki.Initialize(&certData, privateKeyPassword); err != nil {
 		die("cannot initialize pki: %v", err)
 	}
 }

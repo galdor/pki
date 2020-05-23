@@ -79,7 +79,7 @@ func (pki *PKI) CfgPath() string {
 	return path.Join(pki.Path, "cfg.json")
 }
 
-func (pki *PKI) Initialize(certData *CertificateData) error {
+func (pki *PKI) Initialize(certData *CertificateData, privateKeyPassword []byte) error {
 	info("initializing pki in %q", pki.Path)
 
 	// Create the top directory if it does not exists
@@ -115,7 +115,7 @@ func (pki *PKI) Initialize(certData *CertificateData) error {
 	pki.Cfg = cfg
 
 	// Create the root CA private key
-	key, err := pki.CreatePrivateKey(RootCAName)
+	key, err := pki.CreatePrivateKey(RootCAName, privateKeyPassword)
 	if err != nil {
 		return fmt.Errorf("cannot create root ca private key: %w", err)
 	}

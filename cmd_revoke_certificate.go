@@ -43,7 +43,10 @@ func cmdRevokeCertificate(args []string, pki *PKI) {
 		die("cannot load issuer certificate: %v", err)
 	}
 
-	issuerKey, err := pki.LoadPrivateKey(issuerKeyName)
+	issuerKey, err := pki.LoadPrivateKey(issuerKeyName,
+		func() ([]byte, error) {
+			return ReadPrivateKeyPassword(issuerKeyName)
+		})
 	if err != nil {
 		die("cannot load issuer private key: %v", err)
 	}

@@ -35,6 +35,7 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 
 	cl.AddFlag("", "ca", "create a ca certificate")
 	cl.AddFlag("", "client", "create a client certificate")
+	cl.AddFlag("e", "encrypt-private-key", "encrypt the private key")
 
 	cl.AddOption("v", "validity", "days",
 		"the duration during which the certificate will remain valid")
@@ -124,7 +125,10 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 	}
 
 	// Main
-	issuerKey, err := pki.LoadPrivateKey(issuerKeyName)
+	issuerKey, err := pki.LoadPrivateKey(issuerKeyName,
+		func() ([]byte, error) {
+			return ReadPrivateKeyPassword(issuerKeyName)
+		})
 	if err != nil {
 		die("cannot load issuer private key: %v", err)
 	}
@@ -161,7 +165,17 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 
 	certData.UpdateFromDefaults(&pki.Cfg.Certificates)
 
-	_, err = pki.CreatePrivateKey(name)
+	var privateKeyPassword []byte
+	if cl.IsOptionSet("encrypt-private-key") {
+		password, err := ReadPrivateKeyPasswordForCreation(name)
+		if err != nil {
+			die("cannot read private key password: %v", err)
+		}
+
+		privateKeyPassword = password
+	}
+
+	_, err = pki.CreatePrivateKey(name, privateKeyPassword)
 	if err != nil {
 		die("cannot private key: %v", err)
 	}
