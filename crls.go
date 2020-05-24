@@ -18,6 +18,8 @@ import (
 	"crypto"
 	"crypto/rand"
 	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"path"
@@ -28,10 +30,17 @@ func (pki *PKI) LoadCRL(name string) ([]byte, error) {
 
 	crlPath := pki.CRLPath(name)
 
-	crl, err := ioutil.ReadFile(crlPath)
+	data, err := ioutil.ReadFile(crlPath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %q: %w", crlPath, err)
 	}
+
+	block, _ := pem.Decode(data)
+	if block == nil {
+		return nil, errors.New("no pem block found")
+	}
+
+	crl := block.Bytes
 
 	return crl, nil
 }
@@ -79,9 +88,12 @@ func (pki *PKI) GenerateCRL(cert *x509.Certificate, key crypto.PrivateKey, crlDa
 }
 
 func (pki *PKI) WriteCRL(crl []byte, name string) error {
+	block := pem.Block{Type: "X509 CRL", Bytes: crl}
+	pemData := pem.EncodeToMemory(&block)
+
 	crlPath := pki.CRLPath(name)
 
-	return createOrReplaceFile(crlPath, crl, 0644)
+	return createOrReplaceFile(crlPath, pemData, 0644)
 }
 
 func (pki *PKI) CRLPath(name string) string {
