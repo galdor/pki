@@ -58,7 +58,7 @@ func NewPKI(path string) *PKI {
 func (pki *PKI) LoadConfiguration() error {
 	cfgPath := pki.CfgPath()
 
-	info("loading configuration file at %q", cfgPath)
+	p.Info("loading configuration file at %q", cfgPath)
 
 	data, err := ioutil.ReadFile(cfgPath)
 	if err != nil {
@@ -80,7 +80,7 @@ func (pki *PKI) CfgPath() string {
 }
 
 func (pki *PKI) Initialize(certData *CertificateData, privateKeyPassword []byte) error {
-	info("initializing pki in %q", pki.Path)
+	p.Info("initializing pki in %q", pki.Path)
 
 	// Create the top directory if it does not exists
 	if err := os.MkdirAll(pki.Path, 0755); err != nil {
@@ -106,7 +106,7 @@ func (pki *PKI) Initialize(certData *CertificateData, privateKeyPassword []byte)
 
 	cfgPath := pki.CfgPath()
 
-	info("creating default configuration file at %q", cfgPath)
+	p.Info("creating default configuration file at %q", cfgPath)
 
 	if err := ioutil.WriteFile(cfgPath, cfgData, 0644); err != nil {
 		return fmt.Errorf("cannot write %q: %w", cfgPath, err)

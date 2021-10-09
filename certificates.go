@@ -33,7 +33,7 @@ import (
 )
 
 func (pki *PKI) LoadCertificate(name string) (*x509.Certificate, error) {
-	info("loading certificate %q", name)
+	p.Info("loading certificate %q", name)
 
 	certPath := pki.CertificatePath(name)
 
@@ -56,7 +56,7 @@ func (pki *PKI) LoadCertificate(name string) (*x509.Certificate, error) {
 }
 
 func (pki *PKI) CreateCertificate(name string, data *CertificateData, issuerCert *x509.Certificate, issuerKey crypto.PrivateKey, publicKey crypto.PublicKey) (*x509.Certificate, error) {
-	info("creating certificate %q", name)
+	p.Info("creating certificate %q", name)
 
 	cert, err := pki.GenerateCertificate(data, issuerCert, issuerKey,
 		publicKey)

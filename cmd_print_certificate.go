@@ -17,26 +17,25 @@ package main
 import (
 	"os"
 
-	"github.com/galdor/go-cmdline"
+	"github.com/galdor/go-program"
 )
 
-func cmdPrintCertificate(args []string, pki *PKI) {
-	// Command line
-	cl := cmdline.New()
+func addCmdPrintCertificate(p *program.Program) {
+	c := p.AddCommand("print-certificate",
+		"print the content of a certificate", cmdPrintCertificate)
 
-	cl.AddArgument("name", "the name of the certificate")
+	c.AddArgument("name", "the name of the certificate")
+}
 
-	cl.Parse(args)
+func cmdPrintCertificate(p *program.Program) {
+	name := p.ArgumentValue("name")
 
-	name := cl.ArgumentValue("name")
-
-	// Main
 	cert, err := pki.LoadCertificate(name)
 	if err != nil {
-		die("cannot load certificate: %v", err)
+		p.Fatal("cannot load certificate: %v", err)
 	}
 
 	if err := PrintCertificate(cert, os.Stdout); err != nil {
-		die("cannot print certificate: %v", err)
+		p.Fatal("cannot print certificate: %v", err)
 	}
 }

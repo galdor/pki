@@ -20,136 +20,127 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/galdor/go-cmdline"
+	"github.com/galdor/go-program"
 )
 
-func cmdCreateCertificate(args []string, pki *PKI) {
-	// Command line
-	cl := cmdline.New()
+func addCmdCreateCertificate(p *program.Program) {
+	c := p.AddCommand("create-certificate", "create a new certificate",
+		cmdCreateCertificate)
 
-	cl.AddArgument("name", "the name of the certificate")
+	c.AddArgument("name", "the name of the certificate")
 
-	cl.AddOption("i", "issuer-certificate", "name",
+	c.AddOption("i", "issuer-certificate", "name", RootCAName,
 		"the name of the issuer certificate")
-	cl.SetOptionDefault("issuer-certificate", RootCAName)
 
-	cl.AddFlag("", "ca", "create a ca certificate")
-	cl.AddFlag("", "client", "create a client certificate")
-	cl.AddFlag("e", "encrypt-private-key", "encrypt the private key")
+	c.AddFlag("", "ca", "create a ca certificate")
+	c.AddFlag("", "client", "create a client certificate")
+	c.AddFlag("e", "encrypt-private-key", "encrypt the private key")
 
-	cl.AddOption("v", "validity", "days",
+	c.AddOption("", "validity", "days", "",
 		"the duration during which the certificate will remain valid")
 
-	cl.AddOption("", "country", "name",
-		"the subject country")
-	cl.AddOption("", "organization", "name",
-		"the subject organization")
-	cl.AddOption("", "organizational-unit", "name",
+	c.AddOption("", "country", "name", "", "the subject country")
+	c.AddOption("", "organization", "name", "", "the subject organization")
+	c.AddOption("", "organizational-unit", "", "name",
 		"the subject organizational unit")
-	cl.AddOption("", "locality", "name",
-		"the subject locality")
-	cl.AddOption("", "province", "name",
-		"the subject province")
-	cl.AddOption("", "street-address", "name",
-		"the subject street-address")
-	cl.AddOption("", "postal-code", "name",
-		"the subject postal code")
-	cl.AddOption("", "common-name", "name",
-		"the subject common name")
+	c.AddOption("", "locality", "name", "", "the subject locality")
+	c.AddOption("", "province", "name", "", "the subject province")
+	c.AddOption("", "street-address", "", "name", "the subject street-address")
+	c.AddOption("", "postal-code", "", "name", "the subject postal code")
+	c.AddOption("", "common-name", "", "name", "the subject common name")
 
-	cl.AddOption("", "san-uris", "uris",
+	c.AddOption("", "san-uris", "uris", "",
 		"a list of uris used for the san extension")
-	cl.AddOption("", "san-dns-names", "names",
+	c.AddOption("", "san-dns-names", "names", "",
 		"a list of dns names used for the san extension")
-	cl.AddOption("", "san-ip-addresses", "addresses",
+	c.AddOption("", "san-ip-addresses", "addresses", "",
 		"a list of ip addresses used for the san extension")
-	cl.AddOption("", "san-email-addresses", "addresses",
+	c.AddOption("", "san-email-addresses", "addresses", "",
 		"a list of email addresses used for the san extension")
+}
 
-	cl.Parse(args)
+func cmdCreateCertificate(p *program.Program) {
+	name := p.ArgumentValue("name")
 
-	name := cl.ArgumentValue("name")
-
-	issuerCertName := cl.OptionValue("issuer-certificate")
+	issuerCertName := p.OptionValue("issuer-certificate")
 	issuerKeyName := issuerCertName
 
 	validity := 0
-	if cl.IsOptionSet("validity") {
-		validityString := cl.OptionValue("validity")
+	if p.IsOptionSet("validity") {
+		validityString := p.OptionValue("validity")
 		i64, err := strconv.ParseInt(validityString, 10, 64)
 		if err != nil || i64 < 1 || i64 > math.MaxInt32 {
-			die("invalid validity")
+			p.Fatal("invalid validity")
 		}
 
 		validity = int(i64)
 	}
 
 	var sanURIs []*url.URL
-	if s := cl.OptionValue("san-uris"); s != "" {
+	if s := p.OptionValue("san-uris"); s != "" {
 		uris, err := parseSANUris(s)
 		if err != nil {
-			die("invalid san uris: %v", err)
+			p.Fatal("invalid san uris: %v", err)
 		}
 
 		sanURIs = uris
 	}
 
 	var sanDNSNames []string
-	if s := cl.OptionValue("san-dns-names"); s != "" {
+	if s := p.OptionValue("san-dns-names"); s != "" {
 		names, err := parseSANDNSNames(s)
 		if err != nil {
-			die("invalid san dns names: %v", err)
+			p.Fatal("invalid san dns names: %v", err)
 		}
 
 		sanDNSNames = names
 	}
 
 	var sanIPAddresses []net.IP
-	if s := cl.OptionValue("san-ip-addresses"); s != "" {
+	if s := p.OptionValue("san-ip-addresses"); s != "" {
 		addresses, err := parseSANIPAddresses(s)
 		if err != nil {
-			die("invalid san ip addresses: %v", err)
+			p.Fatal("invalid san ip addresses: %v", err)
 		}
 
 		sanIPAddresses = addresses
 	}
 
 	var sanEmailAddresses []string
-	if s := cl.OptionValue("san-email-addresses"); s != "" {
+	if s := p.OptionValue("san-email-addresses"); s != "" {
 		addresses, err := parseSANEmailAddresses(s)
 		if err != nil {
-			die("invalid san email addresses: %v", err)
+			p.Fatal("invalid san email addresses: %v", err)
 		}
 
 		sanEmailAddresses = addresses
 	}
 
-	// Main
 	issuerKey, err := pki.LoadPrivateKey(issuerKeyName,
 		func() ([]byte, error) {
 			return ReadPrivateKeyPassword(issuerKeyName)
 		})
 	if err != nil {
-		die("cannot load issuer private key: %v", err)
+		p.Fatal("cannot load issuer private key: %v", err)
 	}
 
 	issuerCert, err := pki.LoadCertificate(issuerCertName)
 	if err != nil {
-		die("cannot load issuer certificate: %v", err)
+		p.Fatal("cannot load issuer certificate: %v", err)
 	}
 
 	certData := CertificateData{
 		Validity: validity,
 
 		Subject: Subject{
-			Country:            cl.OptionValue("country"),
-			Organization:       cl.OptionValue("organization"),
-			OrganizationalUnit: cl.OptionValue("organizational-unit"),
-			Locality:           cl.OptionValue("locality"),
-			Province:           cl.OptionValue("province"),
-			StreetAddress:      cl.OptionValue("street-address"),
-			PostalCode:         cl.OptionValue("postal-code"),
-			CommonName:         cl.OptionValue("common-name"),
+			Country:            p.OptionValue("country"),
+			Organization:       p.OptionValue("organization"),
+			OrganizationalUnit: p.OptionValue("organizational-unit"),
+			Locality:           p.OptionValue("locality"),
+			Province:           p.OptionValue("province"),
+			StreetAddress:      p.OptionValue("street-address"),
+			PostalCode:         p.OptionValue("postal-code"),
+			CommonName:         p.OptionValue("common-name"),
 		},
 
 		SAN: SAN{
@@ -159,17 +150,17 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 			EmailAddresses: sanEmailAddresses,
 		},
 
-		IsCA:                cl.IsOptionSet("ca"),
-		IsClientCertificate: cl.IsOptionSet("client"),
+		IsCA:                p.IsOptionSet("ca"),
+		IsClientCertificate: p.IsOptionSet("client"),
 	}
 
 	certData.UpdateFromDefaults(&pki.Cfg.Certificates)
 
 	var privateKeyPassword []byte
-	if cl.IsOptionSet("encrypt-private-key") {
+	if p.IsOptionSet("encrypt-private-key") {
 		password, err := ReadPrivateKeyPasswordForCreation(name)
 		if err != nil {
-			die("cannot read private key password: %v", err)
+			p.Fatal("cannot read private key password: %v", err)
 		}
 
 		privateKeyPassword = password
@@ -177,12 +168,12 @@ func cmdCreateCertificate(args []string, pki *PKI) {
 
 	key, err := pki.CreatePrivateKey(name, privateKeyPassword)
 	if err != nil {
-		die("cannot private key: %v", err)
+		p.Fatal("cannot private key: %v", err)
 	}
 
 	_, err = pki.CreateCertificate(name, &certData, issuerCert, issuerKey,
 		PublicKey(key))
 	if err != nil {
-		die("cannot initialize pki: %v", err)
+		p.Fatal("cannot initialize pki: %v", err)
 	}
 }

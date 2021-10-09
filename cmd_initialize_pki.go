@@ -18,76 +18,64 @@ import (
 	"math"
 	"strconv"
 
-	"github.com/galdor/go-cmdline"
+	"github.com/galdor/go-program"
 )
 
-func cmdInitializePKI(args []string, pki *PKI) {
-	// Command line
-	cl := cmdline.New()
+func addCmdInitializePKI(p *program.Program) {
+	c := p.AddCommand("initialize-pki",
+		"initialize a new public key infrastructure", cmdInitializePKI)
 
-	cl.AddOption("v", "validity", "days",
-		"the duration during which the root certificate will "+
-			"remain valid")
-	cl.SetOptionDefault("validity", "365")
+	c.AddOption("", "validity", "days", "365",
+		"the duration during which the root certificate will remain valid")
+	c.AddFlag("e", "encrypt-private-key", "encrypt the private key")
 
-	cl.AddFlag("e", "encrypt-private-key", "encrypt the private key")
-
-	cl.AddOption("", "country", "name",
-		"the subject country")
-	cl.AddOption("", "organization", "name",
-		"the subject organization")
-	cl.AddOption("", "organizational-unit", "name",
+	c.AddOption("", "country", "name", "", "the subject country")
+	c.AddOption("", "organization", "name", "", "the subject organization")
+	c.AddOption("", "organizational-unit", "name", "",
 		"the subject organizational unit")
-	cl.AddOption("", "locality", "name",
-		"the subject locality")
-	cl.AddOption("", "province", "name",
-		"the subject province")
-	cl.AddOption("", "street-address", "name",
-		"the subject street-address")
-	cl.AddOption("", "postal-code", "name",
-		"the subject postal code")
-	cl.AddOption("", "common-name", "name",
-		"the subject common name")
+	c.AddOption("", "locality", "name", "", "the subject locality")
+	c.AddOption("", "province", "name", "", "the subject province")
+	c.AddOption("", "street-address", "name", "", "the subject street-address")
+	c.AddOption("", "postal-code", "name", "", "the subject postal code")
+	c.AddOption("", "common-name", "name", "", "the subject common name")
+}
 
-	cl.Parse(args)
-
-	validityString := cl.OptionValue("validity")
+func cmdInitializePKI(p *program.Program) {
+	validityString := p.OptionValue("validity")
 	i64, err := strconv.ParseInt(validityString, 10, 64)
 	if err != nil || i64 < 1 || i64 > math.MaxInt32 {
-		die("invalid validity")
+		p.Fatal("invalid validity")
 	}
 	validity := int(i64)
 
-	// Private key password prompt
 	var privateKeyPassword []byte
-	if cl.IsOptionSet("encrypt-private-key") {
+	if p.IsOptionSet("encrypt-private-key") {
 		password, err := ReadPrivateKeyPasswordForCreation(RootCAName)
 		if err != nil {
-			die("cannot read private key password: %v", err)
+			p.Fatal("cannot read private key password: %v", err)
 		}
 
 		privateKeyPassword = password
 	}
 
-	// Main
 	certData := CertificateData{
 		Validity: validity,
 
 		Subject: Subject{
-			Country:            cl.OptionValue("country"),
-			Organization:       cl.OptionValue("organization"),
-			OrganizationalUnit: cl.OptionValue("organizational-unit"),
-			Locality:           cl.OptionValue("locality"),
-			Province:           cl.OptionValue("province"),
-			StreetAddress:      cl.OptionValue("street-address"),
-			PostalCode:         cl.OptionValue("postal-code"),
-			CommonName:         cl.OptionValue("common-name"),
+			Country:            p.OptionValue("country"),
+			Organization:       p.OptionValue("organization"),
+			OrganizationalUnit: p.OptionValue("organizational-unit"),
+			Locality:           p.OptionValue("locality"),
+			Province:           p.OptionValue("province"),
+			StreetAddress:      p.OptionValue("street-address"),
+			PostalCode:         p.OptionValue("postal-code"),
+			CommonName:         p.OptionValue("common-name"),
 		},
 
 		IsCA: true,
 	}
 
 	if err := pki.Initialize(&certData, privateKeyPassword); err != nil {
-		die("cannot initialize pki: %v", err)
+		p.Fatal("cannot initialize pki: %v", err)
 	}
 }

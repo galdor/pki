@@ -17,30 +17,28 @@ package main
 import (
 	"time"
 
-	"github.com/galdor/go-cmdline"
+	"github.com/galdor/go-program"
 )
 
-func cmdRevokeCertificate(args []string, pki *PKI) {
-	// Command line
-	cl := cmdline.New()
+func addCmdRevokeCertificate(p *program.Program) {
+	c := p.AddCommand("revoke-certificate", "revoke a certificate",
+		cmdRevokeCertificate)
 
-	cl.AddOption("i", "issuer-certificate", "name",
+	c.AddOption("i", "issuer-certificate", "name", RootCAName,
 		"the name of the issuer certificate")
-	cl.SetOptionDefault("issuer-certificate", RootCAName)
 
-	cl.AddArgument("name", "the name of the certificate to revoke")
+	c.AddArgument("name", "the name of the certificate")
+}
 
-	cl.Parse(args)
-
-	issuerCertName := cl.OptionValue("issuer-certificate")
+func cmdRevokeCertificate(p *program.Program) {
+	issuerCertName := p.OptionValue("issuer-certificate")
 	issuerKeyName := issuerCertName
 
-	certName := cl.ArgumentValue("name")
+	certName := p.ArgumentValue("name")
 
-	// Main
 	issuerCert, err := pki.LoadCertificate(issuerCertName)
 	if err != nil {
-		die("cannot load issuer certificate: %v", err)
+		p.Fatal("cannot load issuer certificate: %v", err)
 	}
 
 	issuerKey, err := pki.LoadPrivateKey(issuerKeyName,
@@ -48,22 +46,22 @@ func cmdRevokeCertificate(args []string, pki *PKI) {
 			return ReadPrivateKeyPassword(issuerKeyName)
 		})
 	if err != nil {
-		die("cannot load issuer private key: %v", err)
+		p.Fatal("cannot load issuer private key: %v", err)
 	}
 
 	cert, err := pki.LoadCertificate(certName)
 	if err != nil {
-		die("cannot load certificate: %v", err)
+		p.Fatal("cannot load certificate: %v", err)
 	}
 
 	data, err := pki.LoadCRL(issuerCertName)
 	if err != nil {
-		die("cannot load crl: %v", err)
+		p.Fatal("cannot load crl: %v", err)
 	}
 
 	var crlData CRLData
 	if err := crlData.Read(data); err != nil {
-		die("cannot read crl data: %v", err)
+		p.Fatal("cannot read crl data: %v", err)
 	}
 
 	// Since we always create CRLs with an expiration date equal to the
@@ -78,6 +76,6 @@ func cmdRevokeCertificate(args []string, pki *PKI) {
 
 	_, err = pki.UpdateCRL(issuerCertName, issuerCert, issuerKey, &crlData)
 	if err != nil {
-		die("cannot create crl: %v", err)
+		p.Fatal("cannot create crl: %v", err)
 	}
 }

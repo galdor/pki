@@ -26,7 +26,7 @@ import (
 )
 
 func (pki *PKI) LoadCRL(name string) ([]byte, error) {
-	info("loading crl %q", name)
+	p.Info("loading crl %q", name)
 
 	crlPath := pki.CRLPath(name)
 
@@ -46,7 +46,7 @@ func (pki *PKI) LoadCRL(name string) ([]byte, error) {
 }
 
 func (pki *PKI) CreateCRL(name string, cert *x509.Certificate, key crypto.PrivateKey, crlData *CRLData) ([]byte, error) {
-	info("creating crl %q", name)
+	p.Info("creating crl %q", name)
 
 	crl, err := pki.GenerateCRL(cert, key, crlData)
 	if err != nil {
@@ -61,7 +61,7 @@ func (pki *PKI) CreateCRL(name string, cert *x509.Certificate, key crypto.Privat
 }
 
 func (pki *PKI) UpdateCRL(name string, cert *x509.Certificate, key crypto.PrivateKey, crlData *CRLData) ([]byte, error) {
-	info("updating crl %q", name)
+	p.Info("updating crl %q", name)
 
 	crl, err := pki.GenerateCRL(cert, key, crlData)
 	if err != nil {

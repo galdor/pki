@@ -32,7 +32,7 @@ import (
 type PrivateKeyPasswordReader func() ([]byte, error)
 
 func (pki *PKI) LoadPrivateKey(name string, passwordReader PrivateKeyPasswordReader) (crypto.PrivateKey, error) {
-	info("loading private key %q", name)
+	p.Info("loading private key %q", name)
 
 	keyPath := pki.PrivateKeyPath(name)
 
@@ -49,7 +49,7 @@ func (pki *PKI) LoadPrivateKey(name string, passwordReader PrivateKeyPasswordRea
 	var blockData []byte
 
 	if x509.IsEncryptedPEMBlock(block) {
-		info("decrypting private key")
+		p.Info("decrypting private key")
 
 		password, err := passwordReader()
 		if err != nil {
@@ -81,7 +81,7 @@ func (pki *PKI) LoadPrivateKey(name string, passwordReader PrivateKeyPasswordRea
 }
 
 func (pki *PKI) CreatePrivateKey(name string, password []byte) (crypto.PrivateKey, error) {
-	info("creating private key %q", name)
+	p.Info("creating private key %q", name)
 
 	key, err := pki.GeneratePrivateKey()
 	if err != nil {

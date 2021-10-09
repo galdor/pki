@@ -15,71 +15,31 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/galdor/go-cmdline"
+	"github.com/galdor/go-program"
 )
 
-var (
-	verbose = false
-)
+var p *program.Program
+var pki *PKI
 
 func main() {
-	// Command line
-	cl := cmdline.New()
+	p = program.NewProgram("pki", "public key infrastructure management")
 
-	cl.AddOption("d", "directory", "path", "the path of the pki directory")
-	cl.SetOptionDefault("directory", ".")
+	p.AddOption("d", "directory", "path", ".", "the path of the pki directory")
 
-	cl.AddCommand("initialize-pki", "initialize a new pki")
-	cl.AddCommand("create-certificate", "create a new certificate")
-	cl.AddCommand("print-certificate", "print the content of a certificate")
-	cl.AddCommand("revoke-certificate", "revoke a certificate")
+	addCmdInitializePKI(p)
+	addCmdCreateCertificate(p)
+	addCmdPrintCertificate(p)
+	addCmdRevokeCertificate(p)
 
-	cl.AddFlag("v", "verbose", "enable execution logging")
+	p.ParseCommandLine()
 
-	cl.Parse(os.Args)
-
-	pkiPath := cl.OptionValue("directory")
-	verbose = cl.IsOptionSet("verbose")
-
-	// Command
-	var cmd func([]string, *PKI)
-
-	switch cl.CommandName() {
-	case "initialize-pki":
-		cmd = cmdInitializePKI
-	case "create-certificate":
-		cmd = cmdCreateCertificate
-	case "print-certificate":
-		cmd = cmdPrintCertificate
-	case "revoke-certificate":
-		cmd = cmdRevokeCertificate
-	}
-
-	// PKI
-	pki := NewPKI(pkiPath)
-
-	if cl.CommandName() != "initialize-pki" {
+	pkiPath := p.OptionValue("directory")
+	pki = NewPKI(pkiPath)
+	if p.CommandName() != "help" && p.CommandName() != "initialize-pki" {
 		if err := pki.LoadConfiguration(); err != nil {
-			die("cannot load pki configuration: %v", err)
+			p.Fatal("cannot load pki configuration: %v", err)
 		}
 	}
 
-	// Main
-	cmd(cl.CommandNameAndArguments(), pki)
-}
-
-func info(format string, args ...interface{}) {
-	if !verbose {
-		return
-	}
-
-	fmt.Printf(format+"\n", args...)
-}
-
-func die(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", args...)
-	os.Exit(1)
+	p.Run()
 }
