@@ -41,13 +41,14 @@ func addCmdCreateCertificate(p *program.Program) {
 
 	c.AddOption("", "country", "name", "", "the subject country")
 	c.AddOption("", "organization", "name", "", "the subject organization")
-	c.AddOption("", "organizational-unit", "", "name",
+	c.AddOption("", "organizational-unit", "name", "",
 		"the subject organizational unit")
 	c.AddOption("", "locality", "name", "", "the subject locality")
 	c.AddOption("", "province", "name", "", "the subject province")
-	c.AddOption("", "street-address", "", "name", "the subject street-address")
-	c.AddOption("", "postal-code", "", "name", "the subject postal code")
-	c.AddOption("", "common-name", "", "name", "the subject common name")
+	c.AddOption("", "street-address", "address", "",
+		"the subject street-address")
+	c.AddOption("", "postal-code", "code", "", "the subject postal code")
+	c.AddOption("", "common-name", "domain", "", "the subject common name")
 
 	c.AddOption("", "san-uris", "uris", "",
 		"a list of uris used for the san extension")
